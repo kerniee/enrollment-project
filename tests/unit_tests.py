@@ -386,9 +386,14 @@ def test_stats_after_deletion():
     print("Test stats after deletion passed.")
 
 
-def test_delete():
+def test_delete(ok_404=False):
     status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
-    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    if ok_404:
+        status_ok = (200, 404)
+    else:
+        status_ok = (200,)
+    assert status in status_ok, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request(f"/nodes/{ROOT_ID}", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"
@@ -457,7 +462,7 @@ def test_price_after_edit_category_parent():
 
 
 def test_all():
-    test_delete()
+    test_delete(ok_404=True)
     test_import_400()
     test_import()
     test_nodes()

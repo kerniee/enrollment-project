@@ -5,11 +5,11 @@
 """
 import argparse
 import logging
+import os
 
 from alembic.config import CommandLine
 
 from market.utils.pg import DEFAULT_PG_URL, make_alembic_config
-import os
 
 
 def main():
