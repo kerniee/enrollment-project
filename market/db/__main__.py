@@ -7,9 +7,9 @@ import argparse
 import logging
 
 from alembic.config import CommandLine
-from decouple import config
 
 from market.utils.pg import DEFAULT_PG_URL, make_alembic_config
+import os
 
 
 def main():
@@ -18,11 +18,15 @@ def main():
     alembic = CommandLine()
     alembic.parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
     alembic.parser.add_argument(
-        '--pg-url', default=config('MARKET_PG_URL', default=DEFAULT_PG_URL),
+        '--pg-url', default=os.getenv("MARKET_PG_URL", DEFAULT_PG_URL),
         help='Database URL [env var: MARKET_PG_URL]'
     )
 
     options = alembic.parser.parse_args()
+
+    if "pg_url" in options and "asyncpg" in options.pg_url:
+        options.pg_url = options.pg_url.replace("+asyncpg", "")
+
     if 'cmd' not in options:
         alembic.parser.error('too few arguments')
         exit(128)

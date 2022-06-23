@@ -1,0 +1,26 @@
+version: "3.7"
+services:
+  market:
+    restart: always
+    image: {{ market_image }}
+    ports:
+      - "80:80"
+    depends_on:
+      - postgres
+    environment:
+      - MARKET_PG_URL=postgresql+asyncpg://{{ market_pg_user }}:{{ market_pg_password }}@postgres/{{ market_pg_dbname }}
+
+  postgres:
+    restart: always
+    image: postgres:14.3
+    environment:
+      POSTGRES_USER: {{ market_pg_user }}
+      POSTGRES_PASSWORD: {{ market_pg_password }}
+      POSTGRES_DB: {{ market_pg_dbname }}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - /var/lib/postgresql/data:/var/lib/postgresql/data
