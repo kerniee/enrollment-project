@@ -12,7 +12,7 @@ REST API сервис для веб-сервиса сравнения цен.
 (миграции автоматически применяются при запуске)
 
 ```shell
-docker run -it -p 80:80 \
+docker run -it -p 80:80 --network host \
     -e MARKET_PG_URL=postgresql+asyncpg://user:hackme@localhost/market \
     kernie/backendschool2022
 ```
@@ -49,3 +49,31 @@ python -m market.db upgrade head
 uvicorn market.api.main:app --port 80 --host 0.0.0.0
 make test
 ```
+либо
+```shell
+make postgres
+docker run -it -p 80:80 --network host \
+    -e MARKET_PG_URL=postgresql+asyncpg://user:hackme@localhost/market \
+    kernie/backendschool2022
+make test
+```
+
+## Как запустить нагрузочное тестирование?
+
+```shell
+make devenv
+make postgres
+source env/bin/activate
+python -m market.db upgrade head
+uvicorn market.api.main:app --port 80 --host 0.0.0.0
+locust
+```
+либо
+```shell
+make postgres
+docker run -it -p 80:80 --network host \
+    -e MARKET_PG_URL=postgresql+asyncpg://user:hackme@localhost/market \
+    kernie/backendschool2022
+make locust
+```
+После этого станет доступен веб-интерфейс по адресу http://localhost:8089

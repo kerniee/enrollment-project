@@ -1,0 +1,29 @@
+{
+  "id": "43ba67a2-7e9e-48b2-8570-ad19be831d40",
+  "name": "Root",
+  "parentId": null,
+  "type": "CATEGORY",
+  "price": 10000,
+  "date": "2022-02-05T14:00:00.000Z",
+  "children": [
+    {
+      "id": "d593a69d-3d37-4344-801f-fd4a72adba71",
+      "name": "FirstLevelCategory",
+      "parentId": "43ba67a2-7e9e-48b2-8570-ad19be831d40",
+      "type": "CATEGORY",
+      "price": 10000,
+      "date": "2022-02-05T14:00:00.000Z",
+      "children": [
+        {
+          "id": "4b33d9fe-518e-47dd-b72e-af9930dfd6c2",
+          "name": "Item",
+          "parentId": "d593a69d-3d37-4344-801f-fd4a72adba71",
+          "type": "OFFER",
+          "price": 10000,
+          "date": "2022-02-05T14:00:00.000Z",
+          "children": null
+        }
+      ]
+    }
+  ]
+}

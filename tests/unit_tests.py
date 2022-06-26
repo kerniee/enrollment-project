@@ -32,8 +32,8 @@ EDIT_IMPORT_CATEGORY = {
             "name": "Телевизоры",
             "id": "1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2",
             "parentId": "d515e43f-f3f6-4471-bb77-6b455017a2d2",
-                # before   069cb8d7-bbdd-47d3-ad8f-82ef4c269df1
-                # after    d515e43f-f3f6-4471-bb77-6b455017a2d2
+            # before   069cb8d7-bbdd-47d3-ad8f-82ef4c269df1
+            # after    d515e43f-f3f6-4471-bb77-6b455017a2d2
 
         }
     ],
@@ -111,16 +111,17 @@ IMPORT_BATCHES_WRONG = [
     {
         "items": [
             {
-                "type": "CATEGORY",
+                "type": "OFFER",
                 "name": "Товары",
                 "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
-                "parentId": None
+                "parentId": None,
+                "price": 10000
             },
             {
                 "type": "CATEGORY",
                 "name": "Не товары",
-                "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
-                "parentId": None
+                "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df2",
+                "parentId": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1"
             }
         ],
         "updateDate": "2022-02-01T12:00:00.000Z"
@@ -128,6 +129,7 @@ IMPORT_BATCHES_WRONG = [
 ]
 
 IMPORT_BATCHES = [
+    {"items": [], "updateDate": "2022-03-01T12:00:00.000Z"},
     {
         "items": [
             {
@@ -139,6 +141,7 @@ IMPORT_BATCHES = [
         ],
         "updateDate": "2022-02-01T12:00:00.000Z"
     },
+    {"items": [], "updateDate": "2022-03-01T12:00:00.000Z"},
     {
         "items": [
             {
@@ -213,6 +216,7 @@ IMPORT_BATCHES = [
         ],
         "updateDate": "2022-02-03T15:00:00.000Z"
     },
+    {"items": [], "updateDate": "2022-03-01T12:00:00.000Z"},
     # {
     #     "items": [
     #         {
@@ -227,8 +231,34 @@ IMPORT_BATCHES = [
     # }
 ]
 
-with open("data/test_01_import.json") as f:
-    EXPECTED_TREE = json.load(f)
+NEW_ROOT_ID = "43ba67a2-7e9e-48b2-8570-ad19be831d40"
+NEW_LAST_ID = "4b33d9fe-518e-47dd-b72e-af9930dfd6c2"
+NEW_IMPORT = [
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Root",
+                "id": NEW_ROOT_ID,
+                "parentId": None
+            },
+            {
+                "type": "CATEGORY",
+                "name": "FirstLevelCategory",
+                "id": "d593a69d-3d37-4344-801f-fd4a72adba71",
+                "parentId": NEW_ROOT_ID
+            },
+            {
+                "type": "OFFER",
+                "name": "Item",
+                "id": NEW_LAST_ID,
+                "parentId": "d593a69d-3d37-4344-801f-fd4a72adba71",
+                "price": 10000
+            }
+        ],
+        "updateDate": "2022-02-05T14:00:00.000Z"
+    }
+]
 
 
 def request(path, method="GET", data=None, json_response=False):
@@ -277,8 +307,12 @@ def print_diff(expected, response):
                     "expected.json", "response.json"])
 
 
-def test_import():
-    for index, batch in enumerate(IMPORT_BATCHES):
+def test_import(batches=None, update_date=None):
+    if batches is None:
+        batches = IMPORT_BATCHES
+    for index, batch in enumerate(batches):
+        if update_date is not None:
+            batch["updateDate"] = update_date[:len("2022-02-01T")] + f"{index:02d}:00:00.000Z"
         print(f"Importing batch {index}")
         status, _ = request("/imports", method="POST", data=batch)
 
@@ -297,16 +331,21 @@ def test_import_400():
     print("Test import 400 passed.")
 
 
-def test_nodes():
-    status, response = request(f"/nodes/{ROOT_ID}", json_response=True)
-    # print(json.dumps(response, indent=2, ensure_ascii=False))
+def test_nodes(unit_id=ROOT_ID, check_response=True, resp_file: str = "data/test_01_import.json"):
+    status, response = request(f"/nodes/{unit_id}", json_response=True)
 
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
+    if not check_response:
+        return response
+
+    with open(resp_file) as f:
+        expected_tree = json.load(f)
+
     deep_sort_children(response)
-    deep_sort_children(EXPECTED_TREE)
-    if response != EXPECTED_TREE:
-        print_diff(EXPECTED_TREE, response)
+    deep_sort_children(expected_tree)
+    if response != expected_tree:
+        print_diff(expected_tree, response)
         print("Response tree doesn't match expected tree.")
         sys.exit(1)
 
@@ -327,6 +366,7 @@ def test_sales():
         "date": "2022-02-04T00:00:00.000Z"
     })
     status, response = request(f"/sales?{params}", json_response=True)
+    print(response)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
     print("Test sales passed.")
 
@@ -345,7 +385,7 @@ def test_stats():
 
     params = urllib.parse.urlencode({
         "dateStart": "2022-02-01T00:00:00.000Z",
-        "dateEnd": "2022-02-04T00:00:00.000Z"
+        "dateEnd": "2022-06-04T00:00:00.000Z"
     })
     status, response = request(
         f"/node/{ROOT_ID}/statistic?{params}", json_response=True)
@@ -386,8 +426,8 @@ def test_stats_after_deletion():
     print("Test stats after deletion passed.")
 
 
-def test_delete(ok_404=False):
-    status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
+def test_delete(unit_id=ROOT_ID, ok_404=False):
+    status, _ = request(f"/delete/{unit_id}", method="DELETE")
 
     if ok_404:
         status_ok = (200, 404)
@@ -395,7 +435,7 @@ def test_delete(ok_404=False):
         status_ok = (200,)
     assert status in status_ok, f"Expected HTTP status code 200, got {status}"
 
-    status, _ = request(f"/nodes/{ROOT_ID}", json_response=True)
+    status, _ = request(f"/nodes/{unit_id}", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"
 
     print("Test delete passed.")
@@ -462,6 +502,9 @@ def test_price_after_edit_category_parent():
 
 
 def test_all():
+    test_new_import()
+
+    print("TESTING OLD IMPORT")
     test_delete(ok_404=True)
     test_import_400()
     test_import()
@@ -476,6 +519,27 @@ def test_all():
     test_delete()
     test_stats_after_deletion()
     test_nodes_after_deletion()
+
+    test_import()
+    test_import(update_date="2022-05-01T00:00:00.000Z")
+    test_nodes(check_response=False)
+    test_sales()
+    test_stats()
+    test_delete()
+
+
+def test_new_import():
+    print("TESTING NEW IMPORT")
+    test_delete(NEW_ROOT_ID, ok_404=True)
+    test_import(NEW_IMPORT)
+    test_nodes(NEW_ROOT_ID, resp_file="data/test_05_import_with_root.json")
+    test_nodes(NEW_LAST_ID, resp_file="data/test_06_get_offer.json")
+
+    test_delete(NEW_LAST_ID)
+    test_nodes(NEW_ROOT_ID, resp_file="data/test_07_delete_to_make_price_zero.json")
+
+    test_delete(NEW_ROOT_ID)
+    print()
 
 
 def main():

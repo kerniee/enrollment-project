@@ -1,7 +1,7 @@
 from enum import Enum, unique
 
 from sqlalchemy import (
-    Column, Enum as PgEnum, ForeignKey, Integer, String, DateTime, CheckConstraint, Float
+    Column, Enum as PgEnum, ForeignKey, String, DateTime, Float, Integer
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -29,15 +29,11 @@ class ShopUnit(ShopUnitMixin, Base):
 
     parentId = Column(UUID(as_uuid=True), ForeignKey('shop_units.id'), nullable=True)
 
-    parent = relationship('ShopUnit', remote_side=[id], back_populates='children', lazy='selectin')
-    children = relationship('ShopUnit', cascade="all,delete", back_populates='parent', lazy='selectin')
-    children_item_count = Column(Integer, default=0, nullable=False)
+    parent = relationship('ShopUnit', remote_side=[id], back_populates='children')
+    children = relationship('ShopUnit', cascade="all,delete", back_populates='parent')
+    children_count = Column(Integer, nullable=True, default=0)
 
     statistics_children = relationship("ShopUnitStatistics", cascade="all,delete", backref="newest_unit")
-
-    __table_args__ = (
-        CheckConstraint(children_item_count >= 0, name="check_children_item_count_non_negative"), {}
-    )
 
 
 class ShopUnitStatistics(ShopUnitMixin, Base):

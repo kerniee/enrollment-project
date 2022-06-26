@@ -4,20 +4,18 @@ from typing import Union
 
 from fastapi import APIRouter, Depends
 from pydantic import UUID4
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from market.api.crud import UnitCRUD
 from market.api.db import db
 from market.api.schema import ShopUnitCategory, ShopUnitItem
-from market.db.schema import ShopUnit, ShopUnitType
+from market.db.schema import ShopUnitType
 from market.utils.exceptions import HTTPException
 
 router = APIRouter(
     prefix="/nodes",
     tags=["Базовые задачи"],
 )
-
-SHOP_UNIT_COLS = (ShopUnit.id, ShopUnit.name, ShopUnit.date, ShopUnit.parentId, ShopUnit.type, ShopUnit.price)
 
 
 def to_pydantic(_unit):
@@ -37,21 +35,16 @@ def to_pydantic(_unit):
 
 @router.get("/{unit_id}", response_model=Union[ShopUnitCategory, ShopUnitItem])
 async def node_info(unit_id: UUID4, session: AsyncSession = Depends(db.get_session)):
-    beginning_getter = select(SHOP_UNIT_COLS). \
-        filter(ShopUnit.id == unit_id).cte(name='children_for', recursive=True)
-    with_recursive = beginning_getter.union_all(
-        select(SHOP_UNIT_COLS).filter(ShopUnit.parentId == beginning_getter.c.id)
-    )
-    result = await session.execute(select(with_recursive))
-
-    units = result.all()
+    crud = UnitCRUD(session)
+    units = await crud.recursive_tree([unit_id])
 
     if len(units) == 0:
         raise HTTPException(404, "Item not found")
 
     map_children = defaultdict(list)
     root = to_pydantic(units[0])
-    root.children = map_children[root.id]
+    if root.type == ShopUnitType.category:
+        root.children = map_children[root.id]
 
     for unit in reversed(units[1:]):
         pydantic_schema = to_pydantic(unit)
