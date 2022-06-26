@@ -25,6 +25,18 @@ EDIT_IMPORT = {
     "updateDate": "2022-02-04T00:00:00.000Z"
 }
 
+EDIT_TYPE = {
+    "items": [
+        {
+            "type": "CATEGORY",
+            "name": "Goldstar 65\" LED UHD LOL Very Smart",
+            "id": "73bc3b36-02d1-4245-ab35-3106c9ee1c65",
+            "parentId": "1cc0129a-2bfe-474c-9ee6-d435bf5fc8f2"
+        }
+    ],
+    "updateDate": "2022-02-03T17:00:00.000Z"
+}
+
 EDIT_IMPORT_CATEGORY = {
     "items": [
         {
@@ -398,6 +410,15 @@ def test_stats():
     print("Test stats passed.")
 
 
+def test_change_type():
+    print(f"Trying edit category...")
+    status, _ = request("/imports", method="POST", data=EDIT_TYPE)
+
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Test import passed.")
+
+
 def test_stats_after_deletion():
     TO_CHECK = [
         (ROOT_ID,
@@ -511,6 +532,7 @@ def test_all():
     test_nodes()
     test_sales()
     test_stats()
+    test_change_type()
 
     test_price_after_delete()
     test_price_after_edit_parent()
