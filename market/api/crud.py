@@ -92,9 +92,10 @@ class UnitCRUD:
         if len(chain) == 1:
             return
 
+        type_ = UnitCRUD._get_atr(chain[0], "type")
         price = UnitCRUD._get_atr(chain[0], "price")
         count = UnitCRUD._get_atr(chain[0], "children_count")
-        if count <= 0:
+        if type_ == ShopUnitType.offer:
             count = 1
 
         price_diff = -price * count
